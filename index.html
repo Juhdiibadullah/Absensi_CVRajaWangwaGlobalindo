@@ -207,7 +207,53 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp
 */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzCrYnBwsHnW7HqOptrxg1YEyaQt3G3_2Uo56dXIjL_bwJz8KUynDhckDAvQ0CaoV_Plw/exec';
 
+const API_READ_TTL = {
+  getMe: 15000,
+  getDashboard: 15000,
+  getLaporan: 60000,
+  listKaryawan: 120000,
+  listOutlet: 120000,
+  listShift: 120000,
+  getJadwal: 60000,
+  listPola: 120000,
+  listIzin: 30000,
+  cekNotif: 20000
+};
+const API_CACHE = new Map();
+const API_MAX_CACHE = 40;
+
+function apiCacheKey_(fn, a) {
+  let args = '';
+  try { args = JSON.stringify(a); } catch (e) { args = String(a); }
+  return fn + '|' + args;
+}
+function apiCacheGet_(key) {
+  const x = API_CACHE.get(key);
+  if (!x || Date.now() - x.ts > x.ttl) { if (x) API_CACHE.delete(key); return null; }
+  return x.data;
+}
+function apiCachePut_(key, data, ttl) {
+  if (!ttl) return data;
+  if (API_CACHE.size >= API_MAX_CACHE) {
+    const first = API_CACHE.keys().next().value;
+    if (first) API_CACHE.delete(first);
+  }
+  API_CACHE.set(key, { ts: Date.now(), ttl: ttl, data: data });
+  return data;
+}
+function apiCacheClear_() {
+  API_CACHE.clear();
+  cacheClear_();
+}
+
 const api = (fn, ...a) => new Promise(async (ok, no) => {
+  const ttl = API_READ_TTL[fn] || 0;
+  const key = ttl ? apiCacheKey_(fn, a) : '';
+  if (ttl) {
+    const hit = apiCacheGet_(key);
+    if (hit !== null) { ok(hit); return; }
+  }
+
   try {
     if (!API_URL || API_URL.indexOf('GANTI_DENGAN') >= 0) {
       throw new Error('URL Web App Apps Script belum diisi di API_URL.');
@@ -237,6 +283,12 @@ const api = (fn, ...a) => new Promise(async (ok, no) => {
     }
 
     if (!data.ok) throw new Error(String(data.error || 'Terjadi kesalahan di server.'));
+
+    // Data baca disimpan di browser agar pindah menu tidak selalu memanggil server.
+    if (ttl) apiCachePut_(key, data.data, ttl);
+    // Setelah perubahan data, buang cache agar halaman berikutnya mengambil data terbaru.
+    if (!ttl && fn !== 'logout') apiCacheClear_();
+
     ok(data.data);
   } catch (e) {
     if (e && e.name === 'AbortError') {
@@ -368,8 +420,13 @@ async function start() {
   if (S.role === 'Admin') {
     S.tanggal = S.tanggal || iso(new Date());
     const d = new Date(S.tanggal + 'T00:00:00'); S.cal = { y: d.getFullYear(), m: d.getMonth() };
-    await loadDash();
-  } else { await viewEmp(); }
+    showLoadingPage_('beranda');
+    loadDash().catch(e => { toast(e.message, true); if (/Sesi/.test(e.message)) keluar(); });
+  } else {
+    stopMedia();
+    $('#app').innerHTML = '<div class="center"><div class="login"><div class="brand">' + LOGO + '<div><b>AbsensiKu</b><small>CV Raja Wangwa Globalindo</small></div></div><p style="margin-top:18px">Memuat data Anda...</p></div></div>';
+    viewEmp().catch(e => { toast(e.message, true); if (/Sesi/.test(e.message)) keluar(); });
+  }
   setTimeout(pollNotif, 1500);
 }
 
@@ -514,6 +571,7 @@ function shell(title, sub, body) {
 }
 
 async function go(p) {
+  if (S.page === p && document.querySelector('.shell')) return;
   if (S.page === 'jadwal' && p !== 'jadwal' && S.dirty && !confirm('Perubahan jadwal belum disimpan. Lanjut tanpa menyimpan?')) return;
 
   const seq = ++NAV_SEQ;
@@ -578,8 +636,8 @@ function filterBar() {
     '</select><input type="date" value="' + esc(S.tanggal) + '" onchange="setTgl(this.value)" aria-label="Tanggal">' +
     '<button class="btn ghost sm" onclick="refresh()">Muat ulang</button></div>';
 }
-function setShift(v) { S.shift = v; S.pg = 1; cacheClear(); loadDash(++NAV_SEQ).catch(e => toast(e.message, true)); }
-function refresh() { cacheClear(); loadDash(++NAV_SEQ).then(() => toast('Data diperbarui')).catch(e => toast(e.message, true)); }
+function setShift(v) { S.shift = v; S.pg = 1; apiCacheClear_(); loadDash(++NAV_SEQ).catch(e => toast(e.message, true)); }
+function refresh() { apiCacheClear_(); loadDash(++NAV_SEQ).then(() => toast('Data diperbarui')).catch(e => toast(e.message, true)); }
 setInterval(() => {
   if (S.role !== 'Admin' || !S.token || (S.page !== 'beranda' && S.page !== 'absensi')) return;
   const a = document.activeElement;
@@ -587,8 +645,8 @@ setInterval(() => {
   cacheClear();
   loadDash(++NAV_SEQ).catch(() => {});
 }, 60000);
-function setOutlet(v) { S.outlet = v; S.pg = 1; cacheClear(); loadDash(++NAV_SEQ).catch(e => toast(e.message, true)); }
-function setTgl(v) { if (!v) return; S.tanggal = v; S.pg = 1; const d = new Date(v + 'T00:00:00'); S.cal = { y: d.getFullYear(), m: d.getMonth() }; cacheClear(); loadDash(++NAV_SEQ).catch(e => toast(e.message, true)); }
+function setOutlet(v) { S.outlet = v; S.pg = 1; apiCacheClear_(); loadDash(++NAV_SEQ).catch(e => toast(e.message, true)); }
+function setTgl(v) { if (!v) return; S.tanggal = v; S.pg = 1; const d = new Date(v + 'T00:00:00'); S.cal = { y: d.getFullYear(), m: d.getMonth() }; apiCacheClear_(); loadDash(++NAV_SEQ).catch(e => toast(e.message, true)); }
 
 function kalender() {
   const { y, m } = S.cal, first = new Date(y, m, 1), off = (first.getDay() + 6) % 7, n = new Date(y, m + 1, 0).getDate(), td = iso(new Date());
@@ -994,7 +1052,7 @@ function procNotif(r) {
     });
     if (baru && !first && (S.page === 'beranda' || S.page === 'absensi')) {
       const a = document.activeElement;
-      if (!((a && /INPUT|SELECT/.test(a.tagName)) || document.querySelector('.mask'))) loadDash().catch(() => {});
+      if (!((a && /INPUT|SELECT/.test(a.tagName)) || document.querySelector('.mask'))) { apiCacheClear_(); loadDash().catch(() => {}); }
     }
   } else {
     (r.izin || []).forEach(x => {
