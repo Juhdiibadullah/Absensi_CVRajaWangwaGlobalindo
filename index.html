@@ -12,7 +12,7 @@
   color-scheme: light;
 }
 *{box-sizing:border-box}
-html,body{margin:0;height:100%}
+html,body{margin:0;min-height:100%;width:100%}
 body{font-family:Inter,"Segoe UI",system-ui,-apple-system,Roboto,Arial,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
 button,input,select{font:inherit;color:inherit}
 button{cursor:pointer}
@@ -194,10 +194,13 @@ td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
   .menu-backdrop.on{opacity:1;pointer-events:auto}
   .mobile-menu-btn{display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(15,37,87,.08);flex:none}
   .mobile-menu-btn .ic{width:21px;height:21px}
-  .main{padding:18px 14px}
-  .top{flex-direction:row;align-items:center;gap:9px}
-  .top>div:first-child{min-width:0;flex:1}
-  .top .rt{flex:none}
+  .main{padding:18px 14px;min-width:0}
+  .top{display:grid;grid-template-columns:auto minmax(0,1fr);align-items:center;gap:9px;margin-bottom:14px}
+  .top>div:first-child{min-width:0;overflow:hidden}
+  .top h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .top .rt{grid-column:2;justify-content:flex-end;min-width:0;flex-wrap:nowrap}
+  .top .chip{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis}
 }
 @media (max-width:520px){
   .side{width:78%;max-width:285px;padding:13px 11px}
@@ -209,9 +212,14 @@ td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
   .nav button .ic{width:17px;height:17px}
   .me{padding-top:12px}
   .mobile-menu-btn{width:36px;height:36px}
-  .top h1{font-size:18px}
-  .top p{font-size:10px}
-  .top .chip{font-size:10px;padding:6px 7px}
+  .top{grid-template-columns:auto minmax(0,1fr);gap:7px;margin-bottom:10px}
+  .top h1{font-size:16px;line-height:1.2;white-space:nowrap}
+  .top p{font-size:9px;line-height:1.2;margin-top:2px}
+  .top .rt{gap:6px;justify-content:flex-end}
+  .top .chip{font-size:10px;padding:7px 9px;border-radius:9px;max-width:calc(100vw - 92px)}
+  .top .chip .ic{width:16px;height:16px}
+  .bell{padding:7px 9px;border-radius:9px}
+  .bell .ic{width:18px;height:18px}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
   .row2{grid-template-columns:1fr}
   .main{padding:10px 9px 18px}
@@ -259,6 +267,26 @@ td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
   .page-beranda .filters{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ===== MOBILE HEADER FINAL ===== */
+@media (max-width:860px){
+  .top{position:relative;display:block;min-height:88px;margin-bottom:14px;padding:0;}
+  .mobile-menu-btn{position:absolute;left:0;top:0;z-index:2;}
+  .top>div:nth-child(2){margin-left:48px;padding-right:48px;min-width:0;}
+  .top h1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;line-height:1.25;}
+  .top p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:4px 0 0;}
+  .top .rt{display:block;position:static;margin:0;padding:0;min-width:0;}
+  .top .rt .bell{position:absolute;right:0;top:0;z-index:2;}
+  .top .rt .chip{display:flex;width:max-content;max-width:calc(100% - 48px);margin:10px 0 0 48px;box-sizing:border-box;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+}
+@media (max-width:520px){
+  .top{min-height:82px;margin-bottom:10px;}
+  .top>div:nth-child(2){margin-left:43px;padding-right:43px;}
+  .top h1{font-size:16px;line-height:1.25;}
+  .top p{font-size:9px;line-height:1.25;margin-top:3px;}
+  .top .rt .bell{right:0;top:0;}
+  .top .rt .chip{max-width:calc(100% - 43px);margin-left:43px;margin-top:9px;font-size:10px;padding:7px 9px;border-radius:9px;}
+}
 </style>
 </head>
 <body>
@@ -641,6 +669,8 @@ function toggleMenu(force) {
 }
 
 function shell(title, sub, body) {
+  // Pastikan halaman baru selalu bisa digulir setelah menu hamburger ditutup.
+  document.body.style.overflow = '';
   const hr = fmtTgl(iso(new Date()));
   $('#app').innerHTML = '<div class="shell page-' + esc(S.page) + '"><aside class="side"><div class="brand">' + LOGO + '<div><b>AbsensiKu</b><small>CV Raja Wangwa Globalindo</small></div></div>' +
     '<nav class="nav">' + NAVS.map(n => '<button class="' + (S.page === n[0] ? 'on' : '') + '" onclick="go(\'' + n[0] + '\')">' + ic(n[2]) + n[1] + '</button>').join('') + '</nav>' +
@@ -651,6 +681,8 @@ function shell(title, sub, body) {
 }
 
 async function go(p) {
+  // Menutup menu sebelum pindah halaman agar body tidak tertinggal dalam mode overflow:hidden.
+  toggleMenu(false);
   if (S.page === p && document.querySelector('.shell')) return;
   if (S.page === 'jadwal' && p !== 'jadwal' && S.dirty && !confirm('Perubahan jadwal belum disimpan. Lanjut tanpa menyimpan?')) return;
 
