@@ -213,12 +213,20 @@ const api = (fn, ...a) => new Promise(async (ok, no) => {
       throw new Error('URL Web App Apps Script belum diisi di API_URL.');
     }
 
-    const res = await fetch(API_URL, {
-      method: 'POST',
-      redirect: 'follow',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ fn: fn, args: a })
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 20000);
+    let res;
+    try {
+      res = await fetch(API_URL, {
+        method: 'POST',
+        redirect: 'follow',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ fn: fn, args: a }),
+        signal: controller.signal
+      });
+    } finally {
+      clearTimeout(timer);
+    }
 
     const text = await res.text();
     let data;
@@ -231,7 +239,11 @@ const api = (fn, ...a) => new Promise(async (ok, no) => {
     if (!data.ok) throw new Error(String(data.error || 'Terjadi kesalahan di server.'));
     ok(data.data);
   } catch (e) {
-    no(e instanceof Error ? e : new Error(String(e)));
+    if (e && e.name === 'AbortError') {
+      no(new Error('Server terlalu lama merespons. Coba lagi.'));
+    } else {
+      no(e instanceof Error ? e : new Error(String(e)));
+    }
   }
 });
 
@@ -289,6 +301,52 @@ function modal(title, html, onSave, saveLabel) {
 const S = { token: null, role: null, nama: '', page: 'beranda', tanggal: '', outlet: '', shift: '', data: null, pg: 1,
             cal: null, karyawan: null, outlets: null, lap: null, jwk: '', jo: '', jd: null, dirty: 0 };
 let EMP = null, stream = null, watchId = null, POS = null, GPSERR = '';
+
+/* ---------- OPTIMASI NAVIGASI ----------
+   Menu langsung menampilkan "Memuat..." tanpa menunggu server.
+   Request lama juga tidak boleh menimpa halaman yang baru dipilih.
+*/
+let NAV_SEQ = 0;
+const PAGE_CACHE = Object.create(null);
+const PAGE_CACHE_TTL = 30000;
+
+function cacheGet_(key) {
+  const x = PAGE_CACHE[key];
+  if (!x || Date.now() - x.ts > PAGE_CACHE_TTL) return null;
+  return x.data;
+}
+function cachePut_(key, data) {
+  PAGE_CACHE[key] = { ts: Date.now(), data: data };
+  return data;
+}
+function cacheClear_(key) {
+  if (key) delete PAGE_CACHE[key];
+  else Object.keys(PAGE_CACHE).forEach(k => delete PAGE_CACHE[k]);
+}
+
+function pageTitle_(p) {
+  const m = {
+    beranda: ['Selamat Datang, ' + esc(S.nama), 'Ringkasan aktivitas absensi.'],
+    absensi: ['Absensi', 'Status absensi karyawan aktif per tanggal dan outlet.'],
+    karyawan: ['Data Karyawan', 'Kelola data karyawan, outlet, dan shift.'],
+    jadwal: ['Jadwal Shift', 'Kelola jadwal shift karyawan.'],
+    pola: ['Rotasi Otomatis', 'Atur pola rotasi jadwal otomatis.'],
+    izin: ['Izin & Sakit', 'Kelola pengajuan izin dan sakit karyawan.'],
+    laporan: ['Laporan', 'Unduh data absensi untuk rekap.'],
+    pengaturan: ['Pengaturan', 'Kelola outlet dan pengaturan aplikasi.']
+  };
+  return m[p] || [p, 'Memuat halaman...'];
+}
+
+function loadingBody_(p) {
+  return '<div class="panel" style="min-height:180px;display:grid;place-items:center">' +
+    '<div class="empty" style="margin:0">Memuat ' + esc(pageTitle_(p)[0]) + '...</div></div>';
+}
+
+function showLoadingPage_(p) {
+  const t = pageTitle_(p);
+  shell(t[0], t[1], loadingBody_(p));
+}
 
 try { S.token = sessionStorage.getItem('tk'); S.role = sessionStorage.getItem('rl'); S.nama = sessionStorage.getItem('nm') || ''; } catch (e) {}
 
@@ -457,20 +515,34 @@ function shell(title, sub, body) {
 
 async function go(p) {
   if (S.page === 'jadwal' && p !== 'jadwal' && S.dirty && !confirm('Perubahan jadwal belum disimpan. Lanjut tanpa menyimpan?')) return;
+
+  const seq = ++NAV_SEQ;
   S.page = p; S.pg = 1; S.dirty = 0;
+
+  showLoadingPage_(p);
+
   try {
-    if (p === 'beranda' || p === 'absensi') await loadDash();
-    else if (p === 'karyawan') await viewKaryawan();
-    else if (p === 'jadwal') await viewJadwal();
-    else if (p === 'pola') await viewPola();
-    else if (p === 'izin') await viewIzin();
-    else if (p === 'laporan') viewLaporan();
-    else if (p === 'pengaturan') await viewOutlet();
-  } catch (e) { toast(e.message, true); if (/Sesi/.test(e.message)) keluar(); }
+    if (p === 'beranda' || p === 'absensi') await loadDash(seq);
+    else if (p === 'karyawan') await viewKaryawan(seq);
+    else if (p === 'jadwal') await viewJadwal(seq);
+    else if (p === 'pola') await viewPola(seq);
+    else if (p === 'izin') await viewIzin(seq);
+    else if (p === 'laporan') viewLaporan(seq);
+    else if (p === 'pengaturan') await viewOutlet(seq);
+  } catch (e) {
+    if (seq !== NAV_SEQ || S.page !== p) return;
+    toast(e.message, true);
+    if (/Sesi/.test(e.message)) keluar();
+  }
 }
 
-async function loadDash() {
-  S.data = await api('getDashboard', S.token, S.tanggal, S.outlet, S.shift);
+async function loadDash(seq) {
+  const key = 'dash|' + S.tanggal + '|' + S.outlet + '|' + S.shift;
+  const hit = cacheGet_(key);
+  S.data = hit || await api('getDashboard', S.token, S.tanggal, S.outlet, S.shift);
+  if (!hit) cachePut_(key, S.data);
+
+  if (seq != null && (seq !== NAV_SEQ || (S.page !== 'beranda' && S.page !== 'absensi'))) return;
   S.page === 'absensi' ? viewAbsensi() : viewBeranda();
 }
 
@@ -506,16 +578,17 @@ function filterBar() {
     '</select><input type="date" value="' + esc(S.tanggal) + '" onchange="setTgl(this.value)" aria-label="Tanggal">' +
     '<button class="btn ghost sm" onclick="refresh()">Muat ulang</button></div>';
 }
-function setShift(v) { S.shift = v; S.pg = 1; loadDash().catch(e => toast(e.message, true)); }
-function refresh() { loadDash().then(() => toast('Data diperbarui')).catch(e => toast(e.message, true)); }
+function setShift(v) { S.shift = v; S.pg = 1; cacheClear(); loadDash(++NAV_SEQ).catch(e => toast(e.message, true)); }
+function refresh() { cacheClear(); loadDash(++NAV_SEQ).then(() => toast('Data diperbarui')).catch(e => toast(e.message, true)); }
 setInterval(() => {
   if (S.role !== 'Admin' || !S.token || (S.page !== 'beranda' && S.page !== 'absensi')) return;
   const a = document.activeElement;
   if ((a && /INPUT|SELECT/.test(a.tagName)) || document.querySelector('.mask')) return;
-  loadDash().catch(() => {});
+  cacheClear();
+  loadDash(++NAV_SEQ).catch(() => {});
 }, 60000);
-function setOutlet(v) { S.outlet = v; S.pg = 1; loadDash().catch(e => toast(e.message, true)); }
-function setTgl(v) { if (!v) return; S.tanggal = v; S.pg = 1; const d = new Date(v + 'T00:00:00'); S.cal = { y: d.getFullYear(), m: d.getMonth() }; loadDash().catch(e => toast(e.message, true)); }
+function setOutlet(v) { S.outlet = v; S.pg = 1; cacheClear(); loadDash(++NAV_SEQ).catch(e => toast(e.message, true)); }
+function setTgl(v) { if (!v) return; S.tanggal = v; S.pg = 1; const d = new Date(v + 'T00:00:00'); S.cal = { y: d.getFullYear(), m: d.getMonth() }; cacheClear(); loadDash(++NAV_SEQ).catch(e => toast(e.message, true)); }
 
 function kalender() {
   const { y, m } = S.cal, first = new Date(y, m, 1), off = (first.getDay() + 6) % 7, n = new Date(y, m + 1, 0).getDate(), td = iso(new Date());
@@ -555,7 +628,8 @@ function viewAbsensi() {
 }
 
 /* ---------- Data karyawan ---------- */
-async function viewKaryawan() {
+async function viewKaryawan(seq) {
+  if (seq != null && (seq !== NAV_SEQ || S.page !== 'karyawan')) return;
   const [k, o, sh] = await Promise.all([api('listKaryawan', S.token), api('listOutlet', S.token), api('listShift', S.token)]);
   S.karyawan = k; S.outlets = o; S.shifts = sh;
   const on = {}; o.forEach(x => on[x.id] = x.nama);
@@ -589,7 +663,8 @@ const addDays = (s, n) => { const d = new Date(s + 'T00:00:00'); d.setDate(d.get
 const senin = d => { const x = new Date(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return iso(x); };
 const warna = el => el.setAttribute('data-v', el.value);
 
-async function viewJadwal() {
+async function viewJadwal(seq) {
+  if (seq != null && (seq !== NAV_SEQ || S.page !== 'jadwal')) return;
   S.jwk = S.jwk || senin(new Date());
   const r = await api('getJadwal', S.token, S.jwk, S.jo);
   S.jd = r; S.dirty = 0;
@@ -663,7 +738,8 @@ const PRESET = {
   'Pagi > Middle > Sore': ['Pagi', 'Middle', 'Sore']
 };
 
-async function viewPola() {
+async function viewPola(seq) {
+  if (seq != null && (seq !== NAV_SEQ || S.page !== 'pola')) return;
   const r = await api('listPola', S.token);
   S.pola = r;
   const hr = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
@@ -766,7 +842,8 @@ async function batalIzin(id) {
   catch (e) { toast(e.message, true); }
 }
 
-async function viewIzin() {
+async function viewIzin(seq) {
+  if (seq != null && (seq !== NAV_SEQ || S.page !== 'izin')) return;
   if (S.izs == null) S.izs = 'Menunggu';
   const list = await api('listIzin', S.token, S.izs);
   S.izl = list;
@@ -940,7 +1017,8 @@ function procNotif(r) {
 }
 
 /* ---------- Laporan ---------- */
-function viewLaporan() {
+function viewLaporan(seq) {
+  if (seq != null && (seq !== NAV_SEQ || S.page !== 'laporan')) return;
   const now = new Date(), awal = iso(new Date(now.getFullYear(), now.getMonth(), 1));
   api('listOutlet', S.token).then(o => {
     S.outlets = o;
@@ -1128,7 +1206,8 @@ function unduhLap() {
 }
 
 /* ---------- Outlet & pengaturan ---------- */
-async function viewOutlet() {
+async function viewOutlet(seq) {
+  if (seq != null && (seq !== NAV_SEQ || S.page !== 'pengaturan')) return;
   const [o, sh] = await Promise.all([api('listOutlet', S.token), api('listShift', S.token)]);
   S.outlets = o; S.shifts = sh;
   const body = '<div class="panel" style="margin-bottom:20px"><div class="ph"><h2>Jam shift</h2><button class="btn sm" onclick="formShift()">Ubah jam shift</button></div><div class="stats" style="margin:0;grid-template-columns:repeat(3,1fr)">' +
