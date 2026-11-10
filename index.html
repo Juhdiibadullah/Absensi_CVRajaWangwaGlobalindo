@@ -77,6 +77,8 @@ label.f input,label.f select{display:block;width:100%;margin-top:5px;padding:10p
 .stat.s-amber{background:#fff7e0;border-color:#fde7a8}.s-amber .bub{background:#f5b50a}
 .stat.s-red{background:#ffecee;border-color:#fcc9cf}.s-red .bub{background:#e5484d}
 .grid2{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start}
+/* Dashboard mobile */
+.mobile-only{display:none}
 .ph{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}
 .ph h2{font-size:18px;margin:0}
 .filters{display:flex;gap:8px;flex-wrap:wrap}
@@ -188,7 +190,79 @@ td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
   .main{padding:18px 14px}
   .top{flex-direction:column}
 }
-@media (max-width:520px){.stats{grid-template-columns:1fr}.row2{grid-template-columns:1fr}}
+@media (max-width:520px){
+  .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
+  .row2{grid-template-columns:1fr}
+  .main{padding:10px 9px 18px}
+  .side{padding:8px 9px 5px}
+  .side .brand{gap:8px}
+  .side .logo{width:34px;height:34px}
+  .side .brand b{font-size:15px}
+  .side .brand small{font-size:9px}
+  .nav{margin-top:8px;gap:4px;padding-bottom:2px;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nav button{padding:7px 9px;border-radius:8px;gap:5px;font-size:10px}
+  .nav button .ic{width:15px;height:15px}
+  .top{margin-bottom:10px;gap:8px}
+  .top h1{font-size:18px;line-height:1.2;margin-bottom:3px}
+  .top p{font-size:11px;line-height:1.35}
+  .rt{width:100%;justify-content:flex-start;gap:6px}
+  .bell{padding:7px 9px;border-radius:8px}
+  .chip{padding:7px 9px;border-radius:8px;font-size:11px}
+  .panel{padding:10px;border-radius:12px}
+  .stat{padding:10px;gap:8px;border-radius:11px;min-width:0}
+  .stat .bub{width:32px;height:32px}
+  .stat .bub .ic{width:16px;height:16px}
+  .stat small{font-size:9px;line-height:1.2}
+  .stat .n{font-size:22px;margin:1px 0 3px}
+  .stat .sub{font-size:9px;line-height:1.25}
+  .ph{gap:8px;margin-bottom:9px;align-items:flex-start}
+  .ph h2{font-size:14px;line-height:1.3}
+  .page-beranda .filters{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%}
+  .page-beranda .filters select,.page-beranda .filters input,.page-beranda .filters button{width:100%;min-width:0;padding:8px 7px;font-size:10px}
+  .page-beranda .grid2{gap:10px}
+  .page-beranda .tw,.page-absensi .tw{overflow:visible}
+  .page-beranda table,.page-absensi table{min-width:0;width:100%;table-layout:fixed;font-size:10.5px}
+  .page-beranda table th,.page-beranda table td,.page-absensi table th,.page-absensi table td{padding:7px 4px;font-size:10.5px;overflow:hidden}
+  .page-beranda table th:nth-child(1),.page-beranda table td:nth-child(1),
+  .page-beranda table th:nth-child(3),.page-beranda table td:nth-child(3),
+  .page-beranda table th:nth-child(4),.page-beranda table td:nth-child(4),
+  .page-beranda table th:nth-child(8),.page-beranda table td:nth-child(8),
+  .page-absensi table th:nth-child(1),.page-absensi table td:nth-child(1),
+  .page-absensi table th:nth-child(3),.page-absensi table td:nth-child(3),
+  .page-absensi table th:nth-child(4),.page-absensi table td:nth-child(4),
+  .page-absensi table th:nth-child(8),.page-absensi table td:nth-child(8){display:none}
+  .page-beranda table th:nth-child(2),.page-beranda table td:nth-child(2),
+  .page-absensi table th:nth-child(2),.page-absensi table td:nth-child(2){width:42%}
+  .page-beranda table th:nth-child(5),.page-beranda table td:nth-child(5),
+  .page-absensi table th:nth-child(5),.page-absensi table td:nth-child(5){width:16%}
+  .page-beranda table th:nth-child(6),.page-beranda table td:nth-child(6),
+  .page-absensi table th:nth-child(6),.page-absensi table td:nth-child(6){width:27%}
+  .page-beranda table th:nth-child(7),.page-beranda table td:nth-child(7),
+  .page-absensi table th:nth-child(7),.page-absensi table td:nth-child(7){width:15%}
+  .page-beranda .who,.page-absensi .who{gap:6px;white-space:nowrap}
+  .page-beranda .av,.page-absensi .av{width:25px;height:25px;font-size:9px}
+  .page-beranda .st,.page-absensi .st{padding:3px 5px;font-size:9px;border-radius:6px;white-space:nowrap}
+  .page-beranda .pager{font-size:10px;margin-top:8px}
+  .page-beranda .pager button{min-width:28px;height:28px}
+  .page-beranda .cal h3{font-size:14px;margin-bottom:7px}
+  .page-beranda .calnav{margin-bottom:4px}
+  .page-beranda .calnav b{font-size:13px}
+  .page-beranda .calnav button{padding:3px 8px;font-size:15px}
+  .page-beranda .cg{gap:1px}
+  .page-beranda .cg span{font-size:9px;padding:3px 0}
+  .page-beranda .cg button{font-size:10px;max-width:36px;justify-self:center;width:100%;aspect-ratio:1}
+  .page-beranda .rekap{margin-top:10px}
+  .page-beranda .rekap h3{font-size:13px}
+  .page-beranda .rk{grid-template-columns:10px 1fr auto 34px;gap:6px;padding:6px 0;font-size:10px}
+  .page-beranda .rk em{font-size:9px}
+  .page-beranda .note{font-size:10px}
+}
+@media (max-width:360px){
+  .stats{grid-template-columns:1fr}
+  .nav button{font-size:9px;padding:7px 8px}
+  .page-beranda .filters{grid-template-columns:1fr}
+}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -563,7 +637,7 @@ const NAVS = [['beranda','Beranda','home'],['absensi','Absensi','cal'],['karyawa
 
 function shell(title, sub, body) {
   const hr = fmtTgl(iso(new Date()));
-  $('#app').innerHTML = '<div class="shell"><aside class="side"><div class="brand">' + LOGO + '<div><b>AbsensiKu</b><small>CV Raja Wangwa Globalindo</small></div></div>' +
+  $('#app').innerHTML = '<div class="shell page-' + esc(S.page) + '"><aside class="side"><div class="brand">' + LOGO + '<div><b>AbsensiKu</b><small>CV Raja Wangwa Globalindo</small></div></div>' +
     '<nav class="nav">' + NAVS.map(n => '<button class="' + (S.page === n[0] ? 'on' : '') + '" onclick="go(\'' + n[0] + '\')">' + ic(n[2]) + n[1] + '</button>').join('') + '</nav>' +
     '<div class="me"><div class="av2">' + esc(initials(S.nama)) + '</div><div><b>' + esc(S.nama) + '</b><small>Admin</small></div>' +
     '<button onclick="keluar()" aria-label="Keluar">' + ic('out') + '</button></div></aside>' +
