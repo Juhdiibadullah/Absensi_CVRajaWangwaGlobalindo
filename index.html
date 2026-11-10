@@ -179,36 +179,42 @@ td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
 .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
 #toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#14213d;color:#fff;padding:12px 18px;border-radius:11px;z-index:30;max-width:92vw;display:none}
 #toast.bad{background:var(--no)}
+.mobile-menu-btn,.menu-backdrop{display:none}
 
 @media (max-width:1100px){.grid2{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:860px){
-  .shell{grid-template-columns:1fr}
-  .side{position:static;height:auto;padding:14px}
-  .nav{flex-direction:row;overflow-x:auto;margin-top:14px}
-  .nav button{padding:10px 14px;white-space:nowrap}
-  .me{display:none}
+  body{overflow-x:hidden}
+  .shell{display:block;min-height:100vh}
+  .side{position:fixed;z-index:60;left:0;top:0;bottom:0;width:270px;height:100vh;box-sizing:border-box;padding:18px 13px;transform:translateX(-105%);transition:transform .22s ease;box-shadow:12px 0 30px rgba(5,20,55,.25);overflow-y:auto}
+  .side.open{transform:translateX(0)}
+  .nav{flex-direction:column;overflow:visible;margin-top:24px;gap:5px}
+  .nav button{padding:12px 13px;white-space:normal;width:100%;font-size:13px}
+  .me{display:flex}
+  .menu-backdrop{display:block;position:fixed;inset:0;background:rgba(5,18,45,.45);z-index:55;opacity:0;pointer-events:none;transition:opacity .2s ease}
+  .menu-backdrop.on{opacity:1;pointer-events:auto}
+  .mobile-menu-btn{display:grid;place-items:center;width:40px;height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--navy);box-shadow:0 2px 8px rgba(15,37,87,.08);flex:none}
+  .mobile-menu-btn .ic{width:21px;height:21px}
   .main{padding:18px 14px}
-  .top{flex-direction:column}
+  .top{flex-direction:row;align-items:center;gap:9px}
+  .top>div:first-child{min-width:0;flex:1}
+  .top .rt{flex:none}
 }
 @media (max-width:520px){
+  .side{width:78%;max-width:285px;padding:13px 11px}
+  .side .brand{gap:8px}
+  .side .brand b{font-size:15px}
+  .side .brand small{font-size:9px}
+  .nav{margin-top:18px;gap:4px}
+  .nav button{padding:11px 12px;border-radius:9px;font-size:12px;gap:10px}
+  .nav button .ic{width:17px;height:17px}
+  .me{padding-top:12px}
+  .mobile-menu-btn{width:36px;height:36px}
+  .top h1{font-size:18px}
+  .top p{font-size:10px}
+  .top .chip{font-size:10px;padding:6px 7px}
   .stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:12px}
   .row2{grid-template-columns:1fr}
   .main{padding:10px 9px 18px}
-  .side{padding:8px 9px 5px}
-  .side .brand{gap:8px}
-  .side .logo{width:34px;height:34px}
-  .side .brand b{font-size:15px}
-  .side .brand small{font-size:9px}
-  .nav{margin-top:8px;gap:4px;padding-bottom:2px;scrollbar-width:none}
-  .nav::-webkit-scrollbar{display:none}
-  .nav button{padding:7px 9px;border-radius:8px;gap:5px;font-size:10px}
-  .nav button .ic{width:15px;height:15px}
-  .top{margin-bottom:10px;gap:8px}
-  .top h1{font-size:18px;line-height:1.2;margin-bottom:3px}
-  .top p{font-size:11px;line-height:1.35}
-  .rt{width:100%;justify-content:flex-start;gap:6px}
-  .bell{padding:7px 9px;border-radius:8px}
-  .chip{padding:7px 9px;border-radius:8px;font-size:11px}
   .panel{padding:10px;border-radius:12px}
   .stat{padding:10px;gap:8px;border-radius:11px;min-width:0}
   .stat .bub{width:32px;height:32px}
@@ -224,22 +230,11 @@ td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
   .page-beranda .tw,.page-absensi .tw{overflow:visible}
   .page-beranda table,.page-absensi table{min-width:0;width:100%;table-layout:fixed;font-size:10.5px}
   .page-beranda table th,.page-beranda table td,.page-absensi table th,.page-absensi table td{padding:7px 4px;font-size:10.5px;overflow:hidden}
-  .page-beranda table th:nth-child(1),.page-beranda table td:nth-child(1),
-  .page-beranda table th:nth-child(3),.page-beranda table td:nth-child(3),
-  .page-beranda table th:nth-child(4),.page-beranda table td:nth-child(4),
-  .page-beranda table th:nth-child(8),.page-beranda table td:nth-child(8),
-  .page-absensi table th:nth-child(1),.page-absensi table td:nth-child(1),
-  .page-absensi table th:nth-child(3),.page-absensi table td:nth-child(3),
-  .page-absensi table th:nth-child(4),.page-absensi table td:nth-child(4),
-  .page-absensi table th:nth-child(8),.page-absensi table td:nth-child(8){display:none}
-  .page-beranda table th:nth-child(2),.page-beranda table td:nth-child(2),
-  .page-absensi table th:nth-child(2),.page-absensi table td:nth-child(2){width:42%}
-  .page-beranda table th:nth-child(5),.page-beranda table td:nth-child(5),
-  .page-absensi table th:nth-child(5),.page-absensi table td:nth-child(5){width:16%}
-  .page-beranda table th:nth-child(6),.page-beranda table td:nth-child(6),
-  .page-absensi table th:nth-child(6),.page-absensi table td:nth-child(6){width:27%}
-  .page-beranda table th:nth-child(7),.page-beranda table td:nth-child(7),
-  .page-absensi table th:nth-child(7),.page-absensi table td:nth-child(7){width:15%}
+  .page-beranda table th:nth-child(1),.page-beranda table td:nth-child(1),.page-beranda table th:nth-child(3),.page-beranda table td:nth-child(3),.page-beranda table th:nth-child(4),.page-beranda table td:nth-child(4),.page-beranda table th:nth-child(8),.page-beranda table td:nth-child(8),.page-absensi table th:nth-child(1),.page-absensi table td:nth-child(1),.page-absensi table th:nth-child(3),.page-absensi table td:nth-child(3),.page-absensi table th:nth-child(4),.page-absensi table td:nth-child(4),.page-absensi table th:nth-child(8),.page-absensi table td:nth-child(8){display:none}
+  .page-beranda table th:nth-child(2),.page-beranda table td:nth-child(2),.page-absensi table th:nth-child(2),.page-absensi table td:nth-child(2){width:42%}
+  .page-beranda table th:nth-child(5),.page-beranda table td:nth-child(5),.page-absensi table th:nth-child(5),.page-absensi table td:nth-child(5){width:16%}
+  .page-beranda table th:nth-child(6),.page-beranda table td:nth-child(6),.page-absensi table th:nth-child(6),.page-absensi table td:nth-child(6){width:27%}
+  .page-beranda table th:nth-child(7),.page-beranda table td:nth-child(7),.page-absensi table th:nth-child(7),.page-absensi table td:nth-child(7){width:15%}
   .page-beranda .who,.page-absensi .who{gap:6px;white-space:nowrap}
   .page-beranda .av,.page-absensi .av{width:25px;height:25px;font-size:9px}
   .page-beranda .st,.page-absensi .st{padding:3px 5px;font-size:9px;border-radius:6px;white-space:nowrap}
@@ -259,8 +254,8 @@ td{padding:11px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
   .page-beranda .note{font-size:10px}
 }
 @media (max-width:360px){
-  .stats{grid-template-columns:1fr}
-  .nav button{font-size:9px;padding:7px 8px}
+  .side{width:82%}
+  .nav button{font-size:11px;padding:10px}
   .page-beranda .filters{grid-template-columns:1fr}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -394,7 +389,8 @@ const IC = {
   repeat:'<path d="M17 2l4 4-4 4M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 0 1-3 3H3"/>',
   x:'<path d="M6 6l12 12M18 6L6 18"/>',
   pin:'<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
-  cam:'<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="14" r="3.5"/>'
+  cam:'<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="14" r="3.5"/>',
+  menu:'<path d="M4 7h16M4 12h16M4 17h16"/>'
 };
 const ic = (n, c) => '<svg class="ic ' + (c || '') + '" viewBox="0 0 24 24" aria-hidden="true">' + IC[n] + '</svg>';
 const LOGO = '<div class="logo" style="background:none"><img src="https://drive.google.com/thumbnail?id=1_yK9ooGDv8gEm3fOTwOVPDK2wbD-NPsU&sz=w128" alt="Logo" style="width:100%;height:100%;border-radius:12px;object-fit:contain"></div>';
@@ -635,13 +631,23 @@ setInterval(() => { if (EMP && $('#ab')) updGps(); }, 1500);
 /* ============================ ADMIN ============================ */
 const NAVS = [['beranda','Beranda','home'],['absensi','Absensi','cal'],['karyawan','Data Karyawan','users'],['jadwal','Jadwal Shift','clock'],['pola','Rotasi Otomatis','repeat'],['izin','Izin & Sakit','user'],['laporan','Laporan','doc'],['pengaturan','Pengaturan','gear']];
 
+function toggleMenu(force) {
+  const side = document.querySelector('.side'), back = document.querySelector('.menu-backdrop');
+  if (!side || !back) return;
+  const open = typeof force === 'boolean' ? force : !side.classList.contains('open');
+  side.classList.toggle('open', open);
+  back.classList.toggle('on', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+}
+
 function shell(title, sub, body) {
   const hr = fmtTgl(iso(new Date()));
   $('#app').innerHTML = '<div class="shell page-' + esc(S.page) + '"><aside class="side"><div class="brand">' + LOGO + '<div><b>AbsensiKu</b><small>CV Raja Wangwa Globalindo</small></div></div>' +
     '<nav class="nav">' + NAVS.map(n => '<button class="' + (S.page === n[0] ? 'on' : '') + '" onclick="go(\'' + n[0] + '\')">' + ic(n[2]) + n[1] + '</button>').join('') + '</nav>' +
     '<div class="me"><div class="av2">' + esc(initials(S.nama)) + '</div><div><b>' + esc(S.nama) + '</b><small>Admin</small></div>' +
     '<button onclick="keluar()" aria-label="Keluar">' + ic('out') + '</button></div></aside>' +
-    '<main class="main"><div class="top"><div><h1>' + title + '</h1><p>' + sub + '</p></div><div class="rt">' + bellBtn() + '<div class="chip">' + ic('cal') + esc(hr) + '</div></div></div>' + body + '</main></div>';
+    '<div class="menu-backdrop" onclick="toggleMenu(false)"></div>' +
+    '<main class="main"><div class="top"><button class="mobile-menu-btn" onclick="toggleMenu()" aria-label="Buka menu">' + ic('menu') + '</button><div><h1>' + title + '</h1><p>' + sub + '</p></div><div class="rt">' + bellBtn() + '<div class="chip">' + ic('cal') + esc(hr) + '</div></div></div>' + body + '</main></div>';
 }
 
 async function go(p) {
